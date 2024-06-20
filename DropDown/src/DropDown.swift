@@ -47,6 +47,10 @@ public final class DropDown: UIView {
 
 	//TODO: handle iOS 7 landscape mode
 
+	public var dropDownHeight: CGFloat = 0.0 {
+		didSet { setNeedsUpdateConstraints() }
+	}
+
 	/// The dismiss mode for a drop down.
 	public enum DismissMode {
 
@@ -560,33 +564,39 @@ private extension DropDown {
 extension DropDown {
 
 	public override func updateConstraints() {
-		if !didSetupConstraints {
-			setupConstraints()
-		}
-
-		didSetupConstraints = true
-
-		let layout = computeLayout()
-
-		if !layout.canBeDisplayed {
-			super.updateConstraints()
-			hide()
-
-			return
-		}
-
-		xConstraint.constant = layout.x
-		yConstraint.constant = layout.y
-		widthConstraint.constant = layout.width
-		heightConstraint.constant = layout.visibleHeight
-
-		tableView.isScrollEnabled = layout.offscreenHeight > 0
-
-		DispatchQueue.main.async { [weak self] in
-			self?.tableView.flashScrollIndicators()
-		}
-
-		super.updateConstraints()
+        if !didSetupConstraints {
+            setupConstraints()
+        }
+        
+        didSetupConstraints = true
+        
+        let layout = computeLayout()
+        
+        if !layout.canBeDisplayed {
+            super.updateConstraints()
+            hide()
+            return
+        }
+        
+        xConstraint.constant = layout.x
+        yConstraint.constant = layout.y
+        widthConstraint.constant = layout.width
+        
+        // Change height of dropdown
+        if dropDownHeight > 0 && dropDownHeight <= layout.visibleHeight {
+            heightConstraint.constant = dropDownHeight
+        } else {
+            heightConstraint.constant = layout.visibleHeight
+        }
+        
+        // Enable scrolling if offscreen content or dropdown height is set
+        tableView.isScrollEnabled = layout.offscreenHeight > 0 || dropDownHeight > 0
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.tableView.flashScrollIndicators()
+        }
+        
+        super.updateConstraints()
 	}
 
 	fileprivate func setupConstraints() {
